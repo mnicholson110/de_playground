@@ -18,6 +18,7 @@ repositories {
 dependencies {
     // This dependency is used by the application.
     implementation(libs.guava)
+    implementation("org.slf4j:slf4j-nop:1.7.25")
 
     implementation("org.apache.kafka:kafka-streams:3.4.0")
     implementation("org.apache.kafka:kafka-clients:3.4.0")
