@@ -57,7 +57,7 @@ func main() {
 	var maxOrderID int
 	orderMap := make(map[int]orderStatusId)
 
-	for maxOrderID < 1000 {
+	for maxOrderID < 500 {
 		// Randomly choose an existing order and increment the status, or create a new order
 		a := rand.Intn(2)
 		if a != 0 {
