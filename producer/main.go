@@ -9,10 +9,10 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
-type orderStatus int
+type orderStatusId int
 
 const (
-	created orderStatus = iota
+	created orderStatusId = iota
 	confirmed
 	paid
 	shipped
@@ -20,11 +20,20 @@ const (
 )
 
 type Order struct {
-	OrderId     int         `json:"orderId"`
-	OrderStatus orderStatus `json:"orderStatus"`
+	OrderId       int           `json:"orderId"`
+	OrderStatusId orderStatusId `json:"orderStatusId"`
+	OrderStatus   string        `json:"orderStatus"`
 }
 
 func main() {
+	orderstatusMap := map[orderStatusId]string{
+		created:   "created",
+		confirmed: "confirmed",
+		paid:      "paid",
+		shipped:   "shipped",
+		delivered: "delivered",
+	}
+
 	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost:9094"})
 	if err != nil {
 		panic(err)
@@ -46,16 +55,16 @@ func main() {
 
 	topic := "orderTopic"
 	var maxOrderID int
-	orderMap := make(map[int]orderStatus)
+	orderMap := make(map[int]orderStatusId)
 
 	for maxOrderID < 1000 {
 		// Randomly choose an existing order and increment the status, or create a new order
-		a := rand.Intn(3)
+		a := rand.Intn(2)
 		if a != 0 {
 			// Create a new order
 			maxOrderID++
 			orderMap[maxOrderID] = created
-			order := Order{OrderId: maxOrderID, OrderStatus: orderMap[maxOrderID]}
+			order := Order{OrderId: maxOrderID, OrderStatusId: orderMap[maxOrderID], OrderStatus: orderstatusMap[orderMap[maxOrderID]]}
 			orderJSON, err := json.Marshal(order)
 			if err != nil {
 				panic(err)
@@ -74,7 +83,7 @@ func main() {
 			orderID := rand.Intn(maxOrderID)
 			if orderMap[orderID] != delivered {
 				orderMap[orderID]++
-				order := Order{OrderId: orderID, OrderStatus: orderMap[orderID]}
+				order := Order{OrderId: orderID, OrderStatusId: orderMap[orderID], OrderStatus: orderstatusMap[orderMap[orderID]]}
 				orderJSON, err := json.Marshal(order)
 				if err != nil {
 					panic(err)

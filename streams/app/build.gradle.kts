@@ -25,7 +25,8 @@ dependencies {
     implementation(libs.guava)
 
     implementation("org.apache.kafka:kafka-streams:3.4.0")
-    implementation ("org.apache.kafka:kafka-clients:3.4.0")
+    implementation("org.apache.kafka:kafka-clients:3.4.0")
+    implementation("org.json:json:20210307")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

@@ -17,7 +17,7 @@ func main() {
 		panic(err)
 	}
 
-	c.SubscribeTopics([]string{"test"}, nil)
+	c.SubscribeTopics([]string{"orderTopic"}, nil)
 
 	// A signal handler or similar could be used to set this to false to break the loop.
 	run := true
