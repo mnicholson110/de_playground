@@ -23,11 +23,12 @@ services:
       - KAFKA_CFG_NUM_PARTITIONS=3
 
   postgres:
-    image: postgres:latest
+    build:
+      context: postgres
+      dockerfile: Dockerfile
+    restart: always
     ports:
       - 5432:5432
     environment:
-      - POSTGRES_PASSWORD=example
-      - POSTGRES_USER=orders_user
-      - POSTGRES_GB=orders
-
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_DB=commerce

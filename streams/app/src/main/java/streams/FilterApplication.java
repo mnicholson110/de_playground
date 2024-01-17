@@ -17,11 +17,10 @@ public class FilterApplication {
     props.put(StreamsConfig.APPLICATION_ID_CONFIG, "filter-application");
     props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9094");
     props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-    System.out.println("Starting filter application");
     StreamsBuilder builder = new StreamsBuilder();
     builder.stream("orderTopic", Consumed.with(Serdes.Bytes(), Serdes.String()))
       .filter((key, value) -> parseOrderStatus(value).equals("delivered"))
-      .to("filteredTopic", Produced.with(Serdes.Bytes(), Serdes.String()));
+      .to("deliveredTopic", Produced.with(Serdes.Bytes(), Serdes.String()));
 
     KafkaStreams streams = new KafkaStreams(builder.build(), props);
     streams.start();

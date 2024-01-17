@@ -28,8 +28,6 @@ type Order struct {
 func main() {
 	orderstatusMap := map[orderStatusId]string{
 		created:   "created",
-		confirmed: "confirmed",
-		paid:      "paid",
 		shipped:   "shipped",
 		delivered: "delivered",
 	}
@@ -57,7 +55,7 @@ func main() {
 	var maxOrderID int
 	orderMap := make(map[int]orderStatusId)
 
-	for maxOrderID < 10000 {
+	for maxOrderID < 5000 {
 		// Randomly choose an existing order and increment the status, or create a new order
 		a := rand.Intn(2)
 		if a != 0 {
