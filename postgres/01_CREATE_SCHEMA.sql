@@ -1,1 +1,1 @@
-CREATE SCHEMA order_schema;
+CREATE SCHEMA orders_schema;

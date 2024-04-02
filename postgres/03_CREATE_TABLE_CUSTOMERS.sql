@@ -1,10 +1,10 @@
-CREATE TABLE order_schema.customers (
+CREATE TABLE orders_schema.customers (
   customer_id SERIAL PRIMARY KEY,
   customer_name TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO order_schema.customers (customer_name)
+INSERT INTO orders_schema.customers (customer_name)
 VALUES
   ('Test Customer 1'),
   ('Test Customer 2'),

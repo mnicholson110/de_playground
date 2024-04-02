@@ -51,7 +51,7 @@ func main() {
 }
 
 func createNewOrder(db *sql.DB, customerId int) error {
-	query := `INSERT INTO order_schema.orders (order_amount, order_status_id, customer_id) VALUES ($1, $2, $3);`
+	query := `INSERT INTO orders_schema.orders (order_amount, order_status_id, customer_id) VALUES ($1, $2, $3);`
 	_, err := db.Exec(query, float64(rand.Intn(18001)+2000)/100, 1, customerId)
 	if err != nil {
 		return err
@@ -91,7 +91,7 @@ func generateOrders(db *sql.DB) {
 func updateRandomOrder(db *sql.DB) {
 	// get the number of orders
 	var count int
-	err := db.QueryRow("SELECT MAX(order_id) FROM order_schema.orders;").Scan(&count)
+	err := db.QueryRow("SELECT MAX(order_id) FROM orders_schema.orders;").Scan(&count)
 	if err != nil {
 		panic(err)
 	}
@@ -100,7 +100,7 @@ func updateRandomOrder(db *sql.DB) {
 		go func() {
 			orderId := rand.Intn(count) + 1
 			var order Order
-			err := db.QueryRow("SELECT * FROM order_schema.orders WHERE order_id = $1;", orderId).Scan(&order.OrderId, &order.OrderAmount, &order.OrderStatus, &order.CustomerId)
+			err := db.QueryRow("SELECT * FROM orders_schema.orders WHERE order_id = $1;", orderId).Scan(&order.OrderId, &order.OrderAmount, &order.OrderStatus, &order.CustomerId)
 			if err != nil {
 				panic(err)
 			}
@@ -113,7 +113,7 @@ func updateRandomOrder(db *sql.DB) {
 					order.OrderStatus += 1
 				}
 				// update the order
-				_, err = db.Exec("UPDATE order_schema.orders SET order_status_id = $1 WHERE order_id = $2;", order.OrderStatus, order.OrderId)
+				_, err = db.Exec("UPDATE orders_schema.orders SET order_status_id = $1 WHERE order_id = $2;", order.OrderStatus, order.OrderId)
 				if err != nil {
 					panic(err)
 				}
