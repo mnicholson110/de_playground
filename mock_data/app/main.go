@@ -11,12 +11,15 @@ import (
 )
 
 const (
-	host           = "postgres"
-	port           = 5432
-	user           = "postgres"
-	password       = "postgres"
-	dbname         = "orders_db"
-	customer_count = 200
+	host                  = "postgres"
+	port                  = 5432
+	user                  = "postgres"
+	password              = "postgres"
+	dbname                = "order_db"
+	customer_count        = 200
+	order_update_delay_ms = 250
+	order_update_count    = 50
+	new_order_delay_ms    = 15000
 )
 
 type Order struct {
@@ -46,12 +49,12 @@ func main() {
 	time.Sleep(1 * time.Second)
 	for {
 		updateRandomOrder(db)
-		time.Sleep(250 * time.Millisecond)
+		time.Sleep(order_update_delay_ms * time.Millisecond)
 	}
 }
 
 func createNewOrder(db *sql.DB, customerId int) error {
-	query := `INSERT INTO orders_schema.orders (order_amount, order_status_id, customer_id) VALUES ($1, $2, $3);`
+	query := `INSERT INTO order_schema.order (order_amount, order_status_id, customer_id) VALUES ($1, $2, $3);`
 	_, err := db.Exec(query, float64(rand.Intn(18001)+2000)/100, 1, customerId)
 	if err != nil {
 		return err
@@ -60,12 +63,12 @@ func createNewOrder(db *sql.DB, customerId int) error {
 }
 
 func generateOrders(db *sql.DB) {
-	// generate initial 5000 orders concurrently
+	// generate initial order concurrently
 	var wg sync.WaitGroup
-	for i := 0; i < 25; i++ {
+	for i := 0; i < 5; i++ {
 		wg.Add(1)
 		go func() {
-			for i := 0; i < 5000; i++ {
+			for i := 0; i < 1000; i++ {
 				customerId := rand.Intn(customer_count) + 1
 				err := createNewOrder(db, customerId)
 				if err != nil {
@@ -76,33 +79,33 @@ func generateOrders(db *sql.DB) {
 		}()
 	}
 	wg.Wait()
-	fmt.Println("Finished generating initial orders")
-	// generate new orders every 500ms
+	fmt.Println("Finished generating initial order")
+	// generate new order every 15s
 	for {
 		customerId := rand.Intn(customer_count) + 1
 		err := createNewOrder(db, customerId)
 		if err != nil {
 			panic(err)
 		}
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(new_order_delay_ms * time.Millisecond)
 	}
 }
 
 func updateRandomOrder(db *sql.DB) {
-	// get the number of orders
+	// get the number of order
 	var count int
 	var wg sync.WaitGroup
-	err := db.QueryRow("SELECT MAX(order_id) FROM orders_schema.orders;").Scan(&count)
+	err := db.QueryRow("SELECT MAX(order_id) FROM order_schema.order;").Scan(&count)
 	if err != nil {
 		panic(err)
 	}
-	// randomly select 30 orders to update
-	for i := 0; i < 30; i++ {
+	// randomly select 50 order to update
+	for i := 0; i < order_update_count; i++ {
 		wg.Add(1)
 		go func() {
 			orderId := rand.Intn(count) + 1
 			var order Order
-			err := db.QueryRow("SELECT order_id,order_amount,order_status_id,customer_id FROM orders_schema.orders WHERE order_id = $1;", orderId).Scan(&order.OrderId, &order.OrderAmount, &order.OrderStatus, &order.CustomerId)
+			err := db.QueryRow("SELECT order_id,order_amount,order_status_id,customer_id FROM order_schema.order WHERE order_id = $1;", orderId).Scan(&order.OrderId, &order.OrderAmount, &order.OrderStatus, &order.CustomerId)
 			if err != nil {
 				panic(err)
 			}
@@ -115,7 +118,7 @@ func updateRandomOrder(db *sql.DB) {
 					order.OrderStatus += 1
 				}
 				// update the order
-				_, err = db.Exec("UPDATE orders_schema.orders SET order_status_id = $1, updated_at = CURRENT_TIMESTAMP WHERE order_id = $2;", order.OrderStatus, order.OrderId)
+				_, err = db.Exec("UPDATE order_schema.order SET order_status_id = $1, updated_at = CURRENT_TIMESTAMP WHERE order_id = $2;", order.OrderStatus, order.OrderId)
 				if err != nil {
 					panic(err)
 				}

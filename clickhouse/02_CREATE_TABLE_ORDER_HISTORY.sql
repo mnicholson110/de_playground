@@ -1,5 +1,5 @@
 USE order_analytics;
-CREATE TABLE order_landing
+CREATE TABLE order_history
 (
 	order_id UInt64,
 	order_amount String,
@@ -12,5 +12,4 @@ CREATE TABLE order_landing
 	__lsn UInt64,
 	__source_ts_ms DateTime
 )
-	ENGINE = Kafka('kafka:29092', 'order_db.order_schema.order', 'clickhouse',
-				'JSONEachRow') settings kafka_thread_per_consumer = 0, kafka_num_consumers = 1;
+	ENGINE = MergeTree ORDER BY (updated_at, order_status_id);

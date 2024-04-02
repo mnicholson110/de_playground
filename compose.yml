@@ -30,7 +30,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: orders_db
+      POSTGRES_DB: order_db
     command: ['postgres', '-c', 'wal_level=logical']
     volumes:
       - ./postgres:/docker-entrypoint-initdb.d
@@ -51,17 +51,13 @@ services:
     depends_on:
       - kafka
       - postgres
+      - mock-data
     environment:
       BOOTSTRAP_SERVERS: kafka:29092
       GROUP_ID: 1
       CONFIG_STORAGE_TOPIC: debezium_configs
       OFFSET_STORAGE_TOPIC: debezium_offsets
       STATUS_STORAGE_TOPIC: debezium_statuses
-      KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: false
-      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: false
-      CONNECT_TOPIC_CREATION_ENABLE: true
     healthcheck:
       test:
         [
@@ -71,7 +67,7 @@ services:
           '--fail',
           '-X',
           'GET',
-          'http://localhost:8083/connectors',
+          'http://localhost:8083/connectors'
         ]
       start_period: 10s
       interval: 10s
@@ -95,20 +91,29 @@ services:
                     "config":{
                       "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
                       "tasks.max": "1",
-                      "topic.prefix": "orders",
+                      "topic.prefix": "order_db",
                       "database.hostname": "postgres",
                       "database.port": "5432",
                       "database.user": "postgres",
                       "database.password": "postgres",
-                      "database.dbname": "orders_db",
+                      "database.dbname": "order_db",
                       "database.server.name": "postgres",
                       "database.history.kafka.bootstrap.servers": "kafka:9092",
                       "plugin.name": "pgoutput",
                       "topic.creation.default.replication.factor": 1,
                       "topic.creation.enable": "true",
-                      "topic.creation.default.partitions": 1
+                      "topic.creation.default.partitions": 1,
+                      "decimal.handling.mode": "string",
+                      "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+                      "key.converter.schemas.enable": "false",
+                      "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+                      "value.converter.schemas.enable": "false",
+                      "transforms": "unwrap",
+                      "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+                      "transforms.unwrap.add.fields": "op,table,lsn,source.ts_ms",
+                      "transforms.unwrap.add.headers": "db"
                     },
-                    "name": "orders-connector"
+                    "name": "order-connector"
                   }'
                 ]
 
@@ -141,7 +146,13 @@ services:
     ports:
       - '8123:8123'
       - '9000:9000'
+    depends_on:
+      debezium:
+        condition: service_healthy
+    volumes:
+      - ./clickhouse:/docker-entrypoint-initdb.d
     environment:
-      CLICKHOUSE_DB: orders_analytics
+      CLICKHOUSE_DB: order_analytics
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: default
+
