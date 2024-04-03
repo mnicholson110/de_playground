@@ -136,6 +136,11 @@ services:
       dockerfile: Dockerfile
     container_name: mock-data
     restart: no
+    environment:
+      INITIAL_ORDER_COUNT_K: 5
+      ORDER_UPDATE_DELAY_MS: 250
+      ORDER_UPDATE_COUNT: 50
+      NEW_ORDER_DELAY_MS: 15000
     depends_on:
       postgres:
         condition: service_healthy

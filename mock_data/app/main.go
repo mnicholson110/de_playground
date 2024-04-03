@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"math/rand"
+	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -11,15 +13,19 @@ import (
 )
 
 const (
-	host                  = "postgres"
-	port                  = 5432
-	user                  = "postgres"
-	password              = "postgres"
-	dbname                = "order_db"
-	customer_count        = 200
-	order_update_delay_ms = 250
-	order_update_count    = 50
-	new_order_delay_ms    = 15000
+	host           = "postgres"
+	port           = 5432
+	user           = "postgres"
+	password       = "postgres"
+	dbname         = "order_db"
+	customer_count = 200
+)
+
+var (
+	initial_order_count_k, _ = strconv.Atoi(os.Getenv("INITIAL_ORDER_COUNT_K"))
+	order_update_delay_ms, _ = strconv.Atoi(os.Getenv("ORDER_UPDATE_DELAY_MS"))
+	order_update_count, _    = strconv.Atoi(os.Getenv("ORDER_UPDATE_COUNT"))
+	new_order_delay_ms, _    = strconv.Atoi(os.Getenv("NEW_ORDER_DELAY_MS"))
 )
 
 type Order struct {
@@ -65,10 +71,10 @@ func createNewOrder(db *sql.DB, customerId int) error {
 func generateOrders(db *sql.DB) {
 	// generate initial order concurrently
 	var wg sync.WaitGroup
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func() {
-			for i := 0; i < 1000; i++ {
+			for i := 0; i < initial_order_count_k*100; i++ {
 				customerId := rand.Intn(customer_count) + 1
 				err := createNewOrder(db, customerId)
 				if err != nil {
@@ -99,7 +105,7 @@ func updateRandomOrder(db *sql.DB) {
 	if err != nil {
 		panic(err)
 	}
-	// randomly select 50 order to update
+	// randomly select orders to update
 	for i := 0; i < order_update_count; i++ {
 		wg.Add(1)
 		go func() {
