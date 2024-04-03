@@ -40,13 +40,18 @@ func main() {
 	fmt.Println("ORDER_UPDATE_DELAY_MS: ", order_update_delay_ms)
 	fmt.Println("ORDER_UPDATE_COUNT_DA: ", order_update_count_da)
 	fmt.Println("NEW_ORDER_DELAY_MS: ", new_order_delay_ms)
+
 	psqlInfo := fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s sslmode=disable",
 		host, port, dbname, user, password)
+
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
+
+	db.SetMaxOpenConns(500)
+	db.SetMaxIdleConns(500)
 
 	err = db.Ping()
 	if err != nil {
@@ -56,7 +61,8 @@ func main() {
 	fmt.Println("Successfully connected!")
 
 	go generateOrders(db)
-	time.Sleep(1 * time.Second)
+	time.Sleep(5 * time.Second) // wait for some initial orders to be generated
+
 	delay := time.Duration(order_update_delay_ms)
 	fmt.Println("Start updating orders")
 	for {
@@ -77,10 +83,11 @@ func createNewOrder(db *sql.DB, customerId int) error {
 func generateOrders(db *sql.DB) {
 	// generate initial order concurrently
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
+	start := time.Now()
+	for i := 0; i < 100; i++ {
 		wg.Add(1)
 		go func() {
-			for i := 0; i < initial_order_count_k*100; i++ {
+			for i := 0; i < initial_order_count_k*10; i++ {
 				customerId := rand.Intn(customer_count) + 1
 				err := createNewOrder(db, customerId)
 				if err != nil {
@@ -91,7 +98,8 @@ func generateOrders(db *sql.DB) {
 		}()
 	}
 	wg.Wait()
-	fmt.Println("Finished generating initial orders")
+
+	fmt.Println("Finished generating initial orders in ", time.Since(start).Seconds(), " seconds.")
 	// generate new orders
 	delay := time.Duration(new_order_delay_ms)
 	for {
@@ -108,6 +116,7 @@ func updateRandomOrder(db *sql.DB) {
 	// get the number of order
 	var count int
 	var wg sync.WaitGroup
+	start := time.Now()
 	err := db.QueryRow("SELECT MAX(order_id) FROM order_schema.order;").Scan(&count)
 	if err != nil {
 		panic(err)
@@ -136,4 +145,5 @@ func updateRandomOrder(db *sql.DB) {
 		}()
 	}
 	wg.Wait()
+	fmt.Println("Finished updating ", fmt.Sprint(order_update_count_da*10), " orders in ", time.Since(start).Seconds(), " seconds.")
 }

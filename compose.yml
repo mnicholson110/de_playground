@@ -137,10 +137,10 @@ services:
     container_name: mock-data
     restart: no
     environment:
-      INITIAL_ORDER_COUNT_K: 300
-      ORDER_UPDATE_DELAY_MS: 50
-      ORDER_UPDATE_COUNT_DA: 100
-      NEW_ORDER_DELAY_MS: 1000
+      INITIAL_ORDER_COUNT_K: 500
+      ORDER_UPDATE_DELAY_MS: 500
+      ORDER_UPDATE_COUNT_DA: 1000
+      NEW_ORDER_DELAY_MS: 50
     depends_on:
       postgres:
         condition: service_healthy
