@@ -24,7 +24,7 @@ const (
 var (
 	initial_order_count_k, _ = strconv.Atoi(os.Getenv("INITIAL_ORDER_COUNT_K"))
 	order_update_delay_ms, _ = strconv.Atoi(os.Getenv("ORDER_UPDATE_DELAY_MS"))
-	order_update_count, _    = strconv.Atoi(os.Getenv("ORDER_UPDATE_COUNT"))
+	order_update_count_da, _ = strconv.Atoi(os.Getenv("ORDER_UPDATE_COUNT_DA"))
 	new_order_delay_ms, _    = strconv.Atoi(os.Getenv("NEW_ORDER_DELAY_MS"))
 )
 
@@ -36,6 +36,10 @@ type Order struct {
 }
 
 func main() {
+	fmt.Println("INITIAL_ORDER_COUNT_K: ", initial_order_count_k)
+	fmt.Println("ORDER_UPDATE_DELAY_MS: ", order_update_delay_ms)
+	fmt.Println("ORDER_UPDATE_COUNT_DA: ", order_update_count_da)
+	fmt.Println("NEW_ORDER_DELAY_MS: ", new_order_delay_ms)
 	psqlInfo := fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s sslmode=disable",
 		host, port, dbname, user, password)
 	db, err := sql.Open("postgres", psqlInfo)
@@ -53,9 +57,11 @@ func main() {
 
 	go generateOrders(db)
 	time.Sleep(1 * time.Second)
+	delay := time.Duration(order_update_delay_ms)
+	fmt.Println("Start updating orders")
 	for {
 		updateRandomOrder(db)
-		time.Sleep(order_update_delay_ms * time.Millisecond)
+		time.Sleep(delay * time.Millisecond)
 	}
 }
 
@@ -85,15 +91,16 @@ func generateOrders(db *sql.DB) {
 		}()
 	}
 	wg.Wait()
-	fmt.Println("Finished generating initial order")
-	// generate new order every 15s
+	fmt.Println("Finished generating initial orders")
+	// generate new orders
+	delay := time.Duration(new_order_delay_ms)
 	for {
 		customerId := rand.Intn(customer_count) + 1
 		err := createNewOrder(db, customerId)
 		if err != nil {
 			panic(err)
 		}
-		time.Sleep(new_order_delay_ms * time.Millisecond)
+		time.Sleep(delay * time.Millisecond)
 	}
 }
 
@@ -106,27 +113,23 @@ func updateRandomOrder(db *sql.DB) {
 		panic(err)
 	}
 	// randomly select orders to update
-	for i := 0; i < order_update_count; i++ {
+	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func() {
-			orderId := rand.Intn(count) + 1
-			var order Order
-			err := db.QueryRow("SELECT order_id,order_amount,order_status_id,customer_id FROM order_schema.order WHERE order_id = $1;", orderId).Scan(&order.OrderId, &order.OrderAmount, &order.OrderStatus, &order.CustomerId)
-			if err != nil {
-				panic(err)
-			}
-			// increment or cancel the order status if it is less than 3
-			if order.OrderStatus < 4 {
+			for i := 0; i < order_update_count_da; i++ {
+				orderId := rand.Intn(count) + 1
 				cancelOrder := rand.Intn(20)
 				if cancelOrder == 0 {
-					order.OrderStatus = 5
+					_, err = db.Exec("UPDATE order_schema.order SET order_status_id = 5, updated_at = CURRENT_TIMESTAMP WHERE order_id = $1 AND order_status_id != 4;", orderId)
+					if err != nil {
+						panic(err)
+					}
 				} else {
-					order.OrderStatus += 1
-				}
-				// update the order
-				_, err = db.Exec("UPDATE order_schema.order SET order_status_id = $1, updated_at = CURRENT_TIMESTAMP WHERE order_id = $2;", order.OrderStatus, order.OrderId)
-				if err != nil {
-					panic(err)
+					// update the order
+					_, err = db.Exec("UPDATE order_schema.order SET order_status_id = order_status_id + 1, updated_at = CURRENT_TIMESTAMP WHERE order_id = $1 AND order_status_id NOT IN (4,5);", orderId)
+					if err != nil {
+						panic(err)
+					}
 				}
 			}
 			wg.Done()
