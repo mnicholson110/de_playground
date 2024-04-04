@@ -1,7 +1,7 @@
 CREATE TABLE order_schema.customer (
   customer_id SERIAL PRIMARY KEY,
   customer_name TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 INSERT INTO order_schema.customer (customer_name)

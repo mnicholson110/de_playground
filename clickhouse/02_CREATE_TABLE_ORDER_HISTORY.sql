@@ -10,6 +10,6 @@ CREATE TABLE order_history
 	__op String,
 	__table String,
 	__lsn UInt64,
-	__source_ts_ms DateTime
+	__source_ts_ms DateTime 
 )
 	ENGINE = MergeTree ORDER BY (updated_at, order_status_id);

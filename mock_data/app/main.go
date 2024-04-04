@@ -107,8 +107,8 @@ func updateOrders() {
 		panic(err)
 	}
 
-	// get a random int between 10 and 30 to cancel orders
-	cancel_order_count := rand.Intn(21) + 10
+	// get a random int between 100 and 3000 to cancel orders
+	cancel_order_count := rand.Intn(3000-100) + 100
 
 	// cancel orders
 	_, err = db.Exec(`UPDATE order_schema.order
