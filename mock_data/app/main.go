@@ -102,43 +102,34 @@ func updateOrders() {
 	}
 	defer db.Close()
 
-	db.SetMaxOpenConns(500)
-	db.SetMaxIdleConns(500)
-
 	err = db.Ping()
 	if err != nil {
 		panic(err)
 	}
 
-	var wg sync.WaitGroup
-	// randomly select orders to update
-	for i := 0; i < 1000; i++ {
-		wg.Add(1)
-		go func() {
-			for i := 0; i < order_update_count_k; i++ {
-				orderId := rand.Intn(order_count) + 1
-				cancelOrder := rand.Intn(20)
-				if cancelOrder == 0 {
-					_, err = db.Exec(`UPDATE order_schema.order
+	// get a random int between 10 and 30 to cancel orders
+	cancel_order_count := rand.Intn(21) + 10
+
+	// cancel orders
+	_, err = db.Exec(`UPDATE order_schema.order
                             SET order_status_id = 5, updated_at = CURRENT_TIMESTAMP
-                            WHERE order_id = $1 AND order_status_id NOT IN (4,5);`,
-						orderId)
-					if err != nil {
-						panic(err)
-					}
-				} else {
-					// update the order
-					_, err = db.Exec(`UPDATE order_schema.order
-                            SET order_status_id = order_status_id + 1, updated_at = CURRENT_TIMESTAMP
-                            WHERE order_id = $1 AND order_status_id NOT IN (4,5);`,
-						orderId)
-					if err != nil {
-						panic(err)
-					}
-				}
-			}
-			wg.Done()
-		}()
+                            WHERE order_id IN (SELECT order_id
+                                               FROM order_schema.order
+                                               WHERE order_status_id NOT IN (4,5)
+                                               ORDER BY RANDOM()
+                                               LIMIT $1);`, cancel_order_count)
+	if err != nil {
+		panic(err)
 	}
-	wg.Wait()
+	// update remaining orders
+	_, err = db.Exec(`UPDATE order_schema.order
+                            SET order_status_id = order_status_id + 1, updated_at = CURRENT_TIMESTAMP
+                            WHERE order_id in (SELECT order_id
+                                               FROM order_schema.order
+                                               WHERE order_status_id NOT IN (4,5)
+                                               ORDER BY RANDOM()
+                                               LIMIT $1);`, order_update_count_k*1000-cancel_order_count)
+	if err != nil {
+		panic(err)
+	}
 }

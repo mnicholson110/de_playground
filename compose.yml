@@ -138,8 +138,8 @@ services:
     restart: no
     environment:
       INITIAL_ORDER_COUNT_K: 500
-      ORDER_UPDATE_COUNT_K: 100
-      NEW_ORDER_COUNT_K: 5
+      ORDER_UPDATE_COUNT_K: 10
+      NEW_ORDER_COUNT_K: 15
       HOST: postgres
       PORT: 5432
       USER: postgres
